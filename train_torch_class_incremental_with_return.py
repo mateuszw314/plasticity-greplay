@@ -14,8 +14,13 @@ import torch.utils.data
 import torchvision
 from torchvision import datasets, transforms
 
+from cifarvae import CIFARVAE, CIFARVAE_continual
+
 
 # In[2]:
+# Set CUDA device
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #todo: make it not global
 
 
 def get_subset_of_classes(dataset, class_indices):
@@ -38,8 +43,7 @@ def get_subset_of_classes(dataset, class_indices):
 # In[3]:
 
 
-# Set CUDA device
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 
 
 
@@ -99,7 +103,8 @@ def train_incremental_tasks():
     current_classes = list(range(0, num_classes_per_task))
 
     model = CIFARVAE(conditional=True, alpha=1.).to(device)
-
+    #model = CIFARVAE_continual(conditional=True, alpha=1.).to(device)
+    
     for task in range(1, total_classes // num_classes_per_task + 1):
         print(f"\nTraining on Task {task}: Classes {current_classes}")
 
@@ -122,7 +127,7 @@ def train_incremental_tasks():
 
 model = train_incremental_tasks()
 
-torch.save(model.state_dict(), 'generator_class_incremental.pth')
+torch.save(model.state_dict(), 'generator_class_incremental_linear_loss_corrected.pth')
 # In[ ]:
 
 

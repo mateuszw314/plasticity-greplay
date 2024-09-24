@@ -113,10 +113,9 @@ class CIFARVAE(tf.keras.Model):
             z_mean, z_log_var, z = self.encoder(images)
             reconstruction = self.decoder(z)
             labels = tf.argmax(labels, axis=1)
-            reconstruction_loss = tf.reduce_mean(
-                tf.reduce_sum(
-                    tf.keras.losses.mse(images, reconstruction), axis=(1, 2)
-                )
+            reconstruction_loss = tf.reduce_sum(
+                    tf.keras.losses.mse(images, reconstruction)
+                
             )
 
             if self.conditional:
@@ -153,7 +152,7 @@ mirrored_strategy = tf.distribute.MirroredStrategy(cross_device_ops=tf.distribut
 
 
 with mirrored_strategy.scope():
-    generator = CIFARVAE(conditional=True, alpha=0.1)
+    generator = CIFARVAE(conditional=True, alpha=1.)
     generator.compile(optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=1e-4))
 
 
@@ -168,14 +167,14 @@ X_test = (X_test -127.5)/127.5
 # In[ ]:
 
 
-generator.fit(X_train, Y_train,  epochs=1000, batch_size=256, verbose=1)
+generator.fit(X_train, Y_train,  epochs=100, batch_size=256, verbose=1)
 
 
 
 # In[ ]:
 
 
-generator.save_weights('generator_full_1000_alpha_01')
+generator.save_weights('generator_full_1000_alpha_1')
 
 
 

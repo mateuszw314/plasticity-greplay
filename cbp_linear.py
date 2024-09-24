@@ -41,7 +41,7 @@ class CBPLinear(nn.Module):
             ln_layer: nn.LayerNorm = None,
             bn_layer: nn.BatchNorm1d = None,
             replacement_rate=1e-4,
-            maturity_threshold=100,
+            maturity_threshold=50,
             init='kaiming',
             act_type='relu',
             util_type='contribution',

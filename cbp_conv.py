@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn.init import calculate_gain
-from lop.algos.cbp_linear import call_reinit, log_features, get_layer_bound
+from cbp_linear import call_reinit, log_features, get_layer_bound
 
 
 class CBPConv(nn.Module):

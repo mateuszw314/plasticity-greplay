@@ -14,7 +14,9 @@ import torch.utils.data
 import torchvision
 from torchvision import datasets, transforms
 
-from cifarvae import CIFARVAE
+from vae_models import VAE
+from feature_dataset import CustomNumpyDataset
+import numpy as np
 
 # In[2]:
 
@@ -36,27 +38,25 @@ def train_step(model, data, optimizer):
     optimizer.step()
     return total_loss.item(), reconstruction_loss.item(), kl_loss.item()
 
-# Data loading and transformation
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
-
-train_dataset = datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1024, shuffle=True)
+data_path = 'data/core50_features/full.npy'
+labels_path = 'data/core50_features/full_labels.npy'
+dataset = CustomNumpyDataset(data_path, labels_path, one_hot_labels=False)
+(train_set, test_set) = torch.utils.data.random_split(dataset=dataset, lengths=[int(np.floor(0.75*len(dataset))), int(np.floor(0.25*len(dataset))+1)], generator=torch.Generator().manual_seed(42))
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=1024,
+                                          shuffle=True, num_workers=2)
 
 # Training setup
-model = CIFARVAE(conditional=True, alpha=10.).to(device)
+model = VAE(conditional=True, alpha=10.).to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 # Training loop
-for epoch in range(100):
+for epoch in range(1000):
     for i, data in enumerate(train_loader, 0):
         loss, reconstruction_loss, kl_loss = train_step(model, data, optimizer)
     print(f"[Epoch {epoch+1}] loss: {loss:.3f}, reconstruction loss: {reconstruction_loss:.3f}, kl loss: {kl_loss:.3f}")
 
 # Save model weights
-torch.save(model.state_dict(), 'generator_full_1000_alpha_1_loss_corrected.pth')
+torch.save(model.state_dict(), 'generator_full_1000_alpha_10.pth')
 
 
 # In[3]:

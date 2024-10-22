@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
+from cbp_linear import CBPLinear
+from cbp_conv import CBPConv
 
 # Define the neural network model using nn.Sequential
 class FeatureClassifier(nn.Module):
@@ -10,14 +12,17 @@ class FeatureClassifier(nn.Module):
         self.fc1 = nn.Linear(input_size, hidden1)
         self.fc2 = nn.Linear(hidden1, hidden2)
         self.fc3 = nn.Linear(hidden2, num_classes)
+        self.dropout = nn.Dropout(0.3)
 
         if continual_backprop:
             self.model = nn.Sequential(
                 self.fc1,
                 nn.ReLU(),
+                self.dropout,
                 CBPLinear(in_layer=self.fc1, out_layer=self.fc2),
                 self.fc2,
                 nn.ReLU(),
+                self.dropout,
                 CBPLinear(in_layer=self.fc2, out_layer=self.fc3),
                 self.fc3
                 )
@@ -25,8 +30,10 @@ class FeatureClassifier(nn.Module):
            self.model = nn.Sequential(
                 self.fc1,
                 nn.ReLU(),
+                self.dropout,
                 self.fc2,
                 nn.ReLU(),
+                self.dropout,
                 self.fc3
                 ) 
         

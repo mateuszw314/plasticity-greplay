@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -12,9 +11,11 @@ from vae_models import VAE
 from feature_classifier import FeatureClassifier
 from feature_dataset import CustomNumpyDataset
 import logging
-import argparse
 from datetime import datetime
 import random
+import yaml
+import argparse
+import shutil
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,39 +23,38 @@ logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Incremental Learning Experiment")
-    parser.add_argument('--data-path', type=str, default='data/core50_features/full.npy', help='Path to the dataset file')
-    parser.add_argument('--labels-path', type=str, default='data/core50_features/full_labels.npy', help='Path to the labels file')
-    parser.add_argument('--output-dir', type=str, default='models_241024', help='Directory to save the models')
-    parser.add_argument('--batch-size', type=int, default=1024, help='Batch size for training')
-    parser.add_argument('--epochs', type=int, default=50, help='Number of epochs per task')
-    parser.add_argument('--num-experiments', type=int, default=1, help='Number of experiments to run')
-    parser.add_argument('--cuda', action='store_true', help='Use CUDA for training')
-    parser.add_argument('--cbp', action='store_true', help='Use continual backpropagation for training')
+    parser.add_argument('--config', type=str, default='config.yaml', help='Path to the configuration file')
     return parser.parse_args()
+
+def load_config(config_path):
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
 
 def main():
     args = parse_args()
-    device = torch.device("cuda" if args.cuda and torch.cuda.is_available() else "cpu")
+    config = load_config(args.config)
+    device = torch.device(config['device'])
     logger.info(f"Using device: {device}")
-    
-
-    for experiment in range(args.num_experiments):
+    for experiment in range(config['num_experiments']):
         try:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            if args.cbp:
-                logger.info(f"Running with cbp")
-                experiment_path = f'replay_cbp_{experiment}_{timestamp}'
-            else:
-                logger.info(f"Running with bp")
-                experiment_path = f'replay_bp_{experiment}_{timestamp}'
-            root_path = os.path.join(args.output_dir, experiment_path)
+            experiment_type = 'cbp' if config['cbp'] else 'bp'
+            experiment_path = f'replay_{experiment_type}_{experiment}_{timestamp}'
+            root_path = os.path.join(config['output_dir'], experiment_path)
             os.makedirs(root_path, exist_ok=True)
+            
+            # Save a copy of the config file to the output directory
+            shutil.copy(args.config, os.path.join(root_path, 'config.yaml'))
 
             # Randomize class order
             all_classes = list(range(50))
             random.shuffle(all_classes)
 
-            train_incremental_tasks(root_path, device, args.data_path, args.labels_path, args.batch_size, args.epochs, all_classes, cbp=args.cbp)
+            train_incremental_tasks(root_path, device, config['data_path'], config['labels_path'], 
+                                    config['batch_size'], config['epochs'], all_classes, cbp=config['cbp'],
+                                   feature_classifier_params=config['feature_classifier'], 
+                                   generator_params=config['generator'])
         except Exception as e:
             logger.error(f"Experiment {experiment} failed with error: {e}")
             continue
@@ -62,34 +62,12 @@ def main():
     logger.info("Finished all experiments")
 
 def get_subset_of_classes(dataset: data.Dataset, class_indices: list) -> data.Subset:
-    """
-    Returns a subset of the dataset containing only the specified classes.
-    
-    Parameters:
-    - dataset: Dataset
-    - class_indices: List[int] of class indices to include in the subset
-    
-    Returns:
-    - Subset of the dataset containing only the specified classes
-    """
     targets = dataset[:][1]
     mask = torch.isin(targets, torch.tensor(class_indices))
     subset_indices = mask.nonzero(as_tuple=False).squeeze().tolist()
     return data.Subset(dataset, subset_indices)
 
 def generate_samples(generator: VAE, classifier: FeatureClassifier, class_to_generate: int, examples_to_generate: int, device: torch.device) -> torch.Tensor:
-    """
-    Generates samples from the VAE for a specific class.
-
-    Parameters:
-    - generator: VAE model
-    - classifier: Classifier model
-    - class_to_generate: Class label to generate
-    - examples_to_generate: Number of examples to generate
-
-    Returns:
-    - Generated images: torch.Tensor
-    """
     accepted_samples = []
     generator.eval()
     classifier.eval()
@@ -117,17 +95,6 @@ def generate_samples(generator: VAE, classifier: FeatureClassifier, class_to_gen
     return torch.stack(accepted_samples)
 
 def train_model(model: nn.Module, optimizer: optim.Optimizer, dataloader: data.DataLoader, device: torch.device, epochs: int, is_classifier: bool = False) -> None:
-    """
-    Trains the model on the given dataloader.
-
-    Parameters:
-    - model: Neural network model (VAE or Classifier)
-    - optimizer: Optimizer
-    - dataloader: DataLoader for the current batch of tasks
-    - device: Device to train on ('cuda' or 'cpu')
-    - epochs: Number of training epochs
-    - is_classifier: Boolean flag indicating if model is a classifier for loss function selection
-    """
     model.train()
     criterion = nn.CrossEntropyLoss() if is_classifier else None
     for epoch in range(epochs):
@@ -151,19 +118,7 @@ def train_model(model: nn.Module, optimizer: optim.Optimizer, dataloader: data.D
 
     logger.info('Finished Training Task')
 
-
 def evaluate_model(model: nn.Module, dataloader: data.DataLoader, device: torch.device) -> float:
-    """
-    Evaluates the classifier model on the given dataloader.
-
-    Parameters:
-    - model: Neural network model (Classifier)
-    - dataloader: DataLoader for evaluation
-    - device: Device to evaluate on ('cuda' or 'cpu')
-
-    Returns:
-    - Accuracy: float
-    """
     model.eval()
     correct = 0
     total = 0
@@ -177,22 +132,19 @@ def evaluate_model(model: nn.Module, dataloader: data.DataLoader, device: torch.
             correct += (predicted == labels).sum().item()
 
     return 100 * correct / total
+
+def train_incremental_tasks(
+    dir_path: str,    device: torch.device, 
+    data_path: str, 
+    labels_path: str, 
+    batch_size: int, 
+    epochs: int, 
+    class_order: list, 
+    cbp: bool,
+    feature_classifier_params: dict,
+    generator_params: dict
+    ) -> None:
     
-
-def train_incremental_tasks(dir_path: str, device: torch.device, data_path: str, labels_path: str, batch_size: int, epochs: int, class_order: list, cbp: bool) -> None:
-    """
-    Trains the VAE model and Classifier incrementally with replay mechanism.
-
-    Parameters:
-    - dir_path: Directory to save models
-    - device: Device to train on ('cuda' or 'cpu')
-    - data_path: Path to the dataset file
-    - labels_path: Path to the labels file
-    - batch_size: Training batch size
-    - epochs: Number of epochs per task
-    - class_order: List of class indices in randomized order
-    - cbp: Continual backprop boolean flag
-    """
     dataset = CustomNumpyDataset(data_path, labels_path, one_hot_labels=False)
     train_set, test_set = data.random_split(dataset, [int(0.75 * len(dataset)), int(0.25 * len(dataset)) + 1], generator=torch.Generator().manual_seed(42))
 
@@ -200,8 +152,16 @@ def train_incremental_tasks(dir_path: str, device: torch.device, data_path: str,
     num_classes_per_task = 2
     current_classes = class_order[:num_classes_per_task]
 
-    model_vae = VAE(conditional=True, alpha=10., continual_backprop=cbp).to(device)
-    model_classifier = FeatureClassifier(input_size=2048, hidden1=512, hidden2=256, num_classes=total_classes, continual_backprop=cbp).to(device)
+    model_vae = VAE(conditional=True, alpha=generator_params['alpha'], continual_backprop=cbp, num_classes = generator_params['num_classes'], latent_dim = generator_params['latent_dim'], encoder_config=generator_params['encoder_config'], decoder_config=generator_params['decoder_config']).to(device)
+    logger.info('Generator init')
+    model_classifier = FeatureClassifier(
+        input_size=feature_classifier_params['input_size'], 
+        hidden1=feature_classifier_params['hidden1'], 
+        hidden2=feature_classifier_params['hidden2'], 
+        num_classes=feature_classifier_params['num_classes'], 
+        continual_backprop=cbp
+    ).to(device)
+    logger.info('Classifier init')
     accuracy_file_path = os.path.join(dir_path, 'accuracy.txt')
     
     for task in range(1, total_classes // num_classes_per_task + 1):

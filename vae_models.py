@@ -23,59 +23,100 @@ class Sampling(nn.Module):
         batch, dim = z_mean.size()
         epsilon = torch.randn(batch, dim).to(z_mean.device)
         return z_mean + torch.exp(0.5 * z_log_var) * epsilon
+
+default_encoder_config={'input_size':2048, 'hidden1': 128, 'hidden2': 128 }
+default_decoder_config={'output_size':2048, 'hidden1': 128, 'hidden2': 128 } 
+
         
 
 class VAE(nn.Module):
-    def __init__(self, alpha=1., conditional=False, continual_backprop=False, num_classes = 50, latent_dim = 10, input_size=2048):
+    def __init__(self,   alpha=1., conditional=False, continual_backprop=False, num_classes = 50, latent_dim = 10, encoder_config = default_encoder_config, decoder_config = default_decoder_config):
         super(VAE, self).__init__()
         self.alpha = alpha
         self.conditional = conditional
-        self.encoder = self.get_encoder(latent_dim, input_size)
+        self.encoder = self.get_encoder(latent_dim, encoder_config, continual_backprop)
         self.sampling = Sampling()
-        self.decoder = self.get_decoder(latent_dim, input_size)
-        self.continual_backprop = continual_backprop
+        self.decoder = self.get_decoder(latent_dim, decoder_config, continual_backprop)
 
 
         if self.conditional:
             self.prior_means = nn.Parameter(torch.randn(num_classes, latent_dim))
             self.prior_logvars = nn.Parameter(torch.randn(num_classes, latent_dim))
 
-    def get_encoder(self, latent_dim, input_size=2048):
+    def get_encoder(self, latent_dim, config, continual_backprop):
 
         class Encoder(nn.Module):
             def __init__(self):
                 super(Encoder, self).__init__()
-                self.dense1 = nn.Linear(input_size, 128)
-                self.dense2 = nn.Linear(128,128)
-                self.z_mean = nn.Linear(128, latent_dim)
-                self.z_log_var = nn.Linear(128, latent_dim)
+                self.dense1 = nn.Linear(config['input_size'], config['hidden1'])
+                self.dense2 = nn.Linear(config['hidden1'],config['hidden2'])
+                self.z_mean = nn.Linear(config['hidden2'], latent_dim)
+                self.z_log_var = nn.Linear(config['hidden2'], latent_dim)
+                self.activation = nn.ReLU()
+
+                if continual_backprop:
+                    self.extractor = nn.Sequential(
+                        self.dense1,
+                        self.activation,
+                        CBPLinear(in_layer=self.dense1, out_layer=self.dense2),
+                        self.dense2,
+                        self.activation,
+                    )
+                else:
+                    self.extractor = nn.Sequential(
+                        self.dense1,
+                        self.activation,
+                        self.dense2,
+                        self.activation,
+                    )
 
             def forward(self, x):
-                x = torch.relu(self.dense1(x))
-                x = torch.relu(self.dense2(x))
+                x = self.extractor(x)
                 z_mean = self.z_mean(x)
                 z_log_var = self.z_log_var(x)
                 return z_mean, z_log_var
         
         return Encoder().to(device)
 
-    def get_decoder(self, latent_dim=100, output_size=2048):
+    def get_decoder(self, latent_dim, config, continual_backprop):
         class Decoder(nn.Module):
             def __init__(self):
                 super(Decoder, self).__init__()
-                self.fc1 = nn.Linear(latent_dim, 128)
-                self.bn1 = nn.BatchNorm1d(128)
-                self.fc2 = nn.Linear(128, 128)
-                self.bn2 = nn.BatchNorm1d(128)
-                self.fc3 = nn.Linear(128, output_size)
+                self.fc1 = nn.Linear(latent_dim, config['hidden1'])
+                self.bn1 = nn.BatchNorm1d(config['hidden1'])
+                self.fc2 = nn.Linear(config['hidden1'], config['hidden2'])
+                self.bn2 = nn.BatchNorm1d(config['hidden2'])
+                self.fc3 = nn.Linear(config['hidden2'], config['output_size'])
                 self.activation = nn.ReLU()
+
+                if continual_backprop:
+                    self.model = nn.Sequential(
+                        self.fc1,
+                        self.bn1,
+                        self.activation,
+                        CBPLinear(in_layer=self.fc1, out_layer=self.fc2),
+                        self.fc2,
+                        self.bn2,
+                        self.activation,
+                        CBPLinear(in_layer=self.fc2, out_layer=self.fc3),
+                        self.fc3
+                        
+                    )
+                else:
+                    self.model = nn.Sequential(
+                        self.fc1,
+                        self.bn1,
+                        self.activation,
+                        self.fc2,
+                        self.bn2,
+                        self.activation,
+                        self.fc3
+                        
+                    )
                 
 
             def forward(self, x):
-                x = self.activation(self.bn1(self.fc1(x)))
-                x = self.activation(self.bn2(self.fc2(x)))
-                x = self.fc3(x)
-                return x
+                return self.model(x)
 
         return Decoder().to(device)
 

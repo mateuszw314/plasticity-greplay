@@ -14,6 +14,7 @@ from feature_dataset import CustomNumpyDataset
 import logging
 import argparse
 from datetime import datetime
+import random
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,24 +24,40 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Incremental Learning Experiment")
     parser.add_argument('--data-path', type=str, default='data/core50_features/full.npy', help='Path to the dataset file')
     parser.add_argument('--labels-path', type=str, default='data/core50_features/full_labels.npy', help='Path to the labels file')
-    parser.add_argument('--output-dir', type=str, default='models_211024', help='Directory to save the models')
+    parser.add_argument('--output-dir', type=str, default='models_241024', help='Directory to save the models')
     parser.add_argument('--batch-size', type=int, default=1024, help='Batch size for training')
     parser.add_argument('--epochs', type=int, default=50, help='Number of epochs per task')
     parser.add_argument('--num-experiments', type=int, default=1, help='Number of experiments to run')
-    parser.add_argument('--cuda', action='store_true', default=True, help='Use CUDA for training')
+    parser.add_argument('--cuda', action='store_true', help='Use CUDA for training')
+    parser.add_argument('--cbp', action='store_true', help='Use continual backpropagation for training')
     return parser.parse_args()
 
 def main():
     args = parse_args()
     device = torch.device("cuda" if args.cuda and torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
+    
 
     for experiment in range(args.num_experiments):
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        experiment_path = f'replay_cbp_{experiment}_{timestamp}'
-        root_path = os.path.join(args.output_dir, experiment_path)
-        os.makedirs(root_path, exist_ok=True)
-        train_incremental_tasks(root_path, device, args.data_path, args.labels_path, args.batch_size, args.epochs, cbp=True)
+        try:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            if args.cbp:
+                logger.info(f"Running with cbp")
+                experiment_path = f'replay_cbp_{experiment}_{timestamp}'
+            else:
+                logger.info(f"Running with bp")
+                experiment_path = f'replay_bp_{experiment}_{timestamp}'
+            root_path = os.path.join(args.output_dir, experiment_path)
+            os.makedirs(root_path, exist_ok=True)
+
+            # Randomize class order
+            all_classes = list(range(50))
+            random.shuffle(all_classes)
+
+            train_incremental_tasks(root_path, device, args.data_path, args.labels_path, args.batch_size, args.epochs, all_classes, cbp=args.cbp)
+        except Exception as e:
+            logger.error(f"Experiment {experiment} failed with error: {e}")
+            continue
 
     logger.info("Finished all experiments")
 
@@ -134,7 +151,35 @@ def train_model(model: nn.Module, optimizer: optim.Optimizer, dataloader: data.D
 
     logger.info('Finished Training Task')
 
-def train_incremental_tasks(dir_path: str, device: torch.device, data_path: str, labels_path: str, batch_size: int, epochs: int, cbp: bool) -> None:
+
+def evaluate_model(model: nn.Module, dataloader: data.DataLoader, device: torch.device) -> float:
+    """
+    Evaluates the classifier model on the given dataloader.
+
+    Parameters:
+    - model: Neural network model (Classifier)
+    - dataloader: DataLoader for evaluation
+    - device: Device to evaluate on ('cuda' or 'cpu')
+
+    Returns:
+    - Accuracy: float
+    """
+    model.eval()
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for images, labels in dataloader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    return 100 * correct / total
+    
+
+def train_incremental_tasks(dir_path: str, device: torch.device, data_path: str, labels_path: str, batch_size: int, epochs: int, class_order: list, cbp: bool) -> None:
     """
     Trains the VAE model and Classifier incrementally with replay mechanism.
 
@@ -145,18 +190,20 @@ def train_incremental_tasks(dir_path: str, device: torch.device, data_path: str,
     - labels_path: Path to the labels file
     - batch_size: Training batch size
     - epochs: Number of epochs per task
+    - class_order: List of class indices in randomized order
     - cbp: Continual backprop boolean flag
     """
     dataset = CustomNumpyDataset(data_path, labels_path, one_hot_labels=False)
-    train_set, _ = data.random_split(dataset, [int(0.75 * len(dataset)), int(0.25 * len(dataset)) + 1], generator=torch.Generator().manual_seed(42))
+    train_set, test_set = data.random_split(dataset, [int(0.75 * len(dataset)), int(0.25 * len(dataset)) + 1], generator=torch.Generator().manual_seed(42))
 
     total_classes = 50
     num_classes_per_task = 2
-    current_classes = list(range(num_classes_per_task))
+    current_classes = class_order[:num_classes_per_task]
 
     model_vae = VAE(conditional=True, alpha=10., continual_backprop=cbp).to(device)
     model_classifier = FeatureClassifier(input_size=2048, hidden1=512, hidden2=256, num_classes=total_classes, continual_backprop=cbp).to(device)
-
+    accuracy_file_path = os.path.join(dir_path, 'accuracy.txt')
+    
     for task in range(1, total_classes // num_classes_per_task + 1):
         logger.info(f"Training on Task {task}: Classes {current_classes}")
 
@@ -165,7 +212,7 @@ def train_incremental_tasks(dir_path: str, device: torch.device, data_path: str,
         if task > 1:  # REPLAY
             generated_images = []
             generated_labels = []
-            previous_classes = list(range((task - 1) * num_classes_per_task))
+            previous_classes = class_order[:((task - 1) * num_classes_per_task)]
             for class_label in previous_classes:
                 samples = generate_samples(model_vae, model_classifier, class_label, 2000, device)
                 generated_images.append(samples)
@@ -188,12 +235,24 @@ def train_incremental_tasks(dir_path: str, device: torch.device, data_path: str,
         train_model(model_vae, optimizer_vae, train_loader, device, epochs)
 
         if task * num_classes_per_task < total_classes:
-            current_classes = list(range(task * num_classes_per_task, (task + 1) * num_classes_per_task))
+            current_classes = class_order[(task * num_classes_per_task):((task + 1) * num_classes_per_task)]
 
         model_path = os.path.join(dir_path, f'generator_class_incremental_with_replay_task{task}.pth')
         torch.save(model_vae.state_dict(), model_path)
         model_path = os.path.join(dir_path, f'classifier_class_incremental_with_replay_task{task}.pth')
         torch.save(model_classifier.state_dict(), model_path)
+        
+        # Evaluate the classifier on all seen classes
+        seen_classes = class_order[:task * num_classes_per_task]
+        test_subset = get_subset_of_classes(test_set, seen_classes)
+        test_loader = data.DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=2)
+        
+        accuracy = evaluate_model(model_classifier, test_loader, device)
+        logger.info(f"Task {task} - Accuracy on seen classes: {accuracy:.2f}%")
+
+        # Store accuracy
+        with open(accuracy_file_path, 'a') as f:
+            f.write(f"Task {task}, Accuracy: {accuracy:.2f}%\n")
 
     logger.info("Finished Incremental Training")
 

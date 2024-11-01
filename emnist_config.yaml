@@ -1,0 +1,35 @@
+output_dir: 'results_emnist/291024_trainset'
+batch_size: 1024
+epochs: 50
+num_experiments: 20
+device: 'cuda:1'
+dataset: 'custom'  
+experiment_type: 'mixed'
+num_classes: 47 # 50 for core50
+custom_dataset:
+  data_path: 'data/EMNIST_numpy/images.npy'
+  labels_path: 'data/EMNIST_numpy/labels.npy'
+  vector_len: 784
+# EMNIST dataset parameters (no additional parameters needed)
+
+# Neural Network configuration
+feature_classifier: 
+  input_size: 784
+  hidden1: 256
+  hidden2: 128
+  num_classes: 47
+  cbp: false
+
+generator:
+    alpha: 10.
+    num_classes: 47
+    latent_dim: 10
+    cbp: true
+    encoder_config:
+        input_size: 784
+        hidden1: 128
+        hidden2: 128
+    decoder_config:
+        output_size: 784
+        hidden1: 128
+        hidden2: 128

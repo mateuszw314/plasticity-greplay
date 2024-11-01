@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import os
+#os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,10 +17,38 @@ import random
 import yaml
 import argparse
 import shutil
+import torchvision.transforms as transforms
+import torchvision.datasets as datasets
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+def load_dataset(config):
+    dataset_name = config['dataset']
+    if dataset_name == 'custom':
+        data_path = config['custom_dataset']['data_path']
+        labels_path = config['custom_dataset']['labels_path']
+        dataset = CustomNumpyDataset(data_path, labels_path, one_hot_labels=False, vector_len=config['custom_dataset']['vector_len'])
+    elif dataset_name == 'emnist':
+        transform = transforms.Compose([
+            transforms.Grayscale(num_output_channels=1),  # Ensure images are grayscale
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,)),  # Normalize to [-1, 1] range
+            transforms.Lambda(lambda x: torch.flatten(x))
+        ])
+        dataset = datasets.EMNIST(root='./data', split='balanced', train=True, download=True, transform=transform)
+        test_dataset = datasets.EMNIST(root='./data', split='balanced', train=False, download=True, transform=transform)
+        return dataset, test_dataset
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset_name}")
+
+    # For custom dataset, return only single dataset split
+    dataset_len = len(dataset)
+    train_set, test_set = data.random_split(dataset, [int(0.75 * dataset_len), int(0.25 * dataset_len) + 1], generator=torch.Generator().manual_seed(42))
+    #train_set, test_set = data.random_split(dataset, [int(0.75 * dataset_len), int(0.25 * dataset_len)], generator=torch.Generator().manual_seed(42))
+    return train_set, test_set
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Incremental Learning Experiment")
@@ -39,7 +68,7 @@ def main():
     for experiment in range(config['num_experiments']):
         try:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            experiment_type = 'cbp' if config['cbp'] else 'bp'
+            experiment_type = config['experiment_type']
             experiment_path = f'replay_{experiment_type}_{experiment}_{timestamp}'
             root_path = os.path.join(config['output_dir'], experiment_path)
             os.makedirs(root_path, exist_ok=True)
@@ -48,24 +77,43 @@ def main():
             shutil.copy(args.config, os.path.join(root_path, 'config.yaml'))
 
             # Randomize class order
-            all_classes = list(range(50))
+            all_classes = list(range(config['num_classes']))
             random.shuffle(all_classes)
 
-            train_incremental_tasks(root_path, device, config['data_path'], config['labels_path'], 
-                                    config['batch_size'], config['epochs'], all_classes, cbp=config['cbp'],
-                                   feature_classifier_params=config['feature_classifier'], 
-                                   generator_params=config['generator'])
+            train_incremental_tasks(root_path, device, all_classes, config)
         except Exception as e:
             logger.error(f"Experiment {experiment} failed with error: {e}")
             continue
 
     logger.info("Finished all experiments")
 
-def get_subset_of_classes(dataset: data.Dataset, class_indices: list) -> data.Subset:
-    targets = dataset[:][1]
-    mask = torch.isin(targets, torch.tensor(class_indices))
-    subset_indices = mask.nonzero(as_tuple=False).squeeze().tolist()
-    return data.Subset(dataset, subset_indices)
+def get_subset_of_classes(dataset, class_indices):
+    # If the dataset is a Subset, get the indices and corresponding labels
+    if isinstance(dataset, data.Subset):
+        if isinstance(dataset.dataset, CustomNumpyDataset):
+            # For custom dataset
+            targets = dataset.dataset.labels[dataset.indices]
+        elif isinstance(dataset.dataset, datasets.EMNIST):
+            # For EMNIST dataset
+            targets = torch.tensor(dataset.dataset.targets)[dataset.indices]
+        else:
+            raise ValueError("Unsupported dataset type")
+
+        mask = torch.isin(targets, torch.tensor(class_indices))
+        subset_indices = [dataset.indices[i] for i, m in enumerate(mask) if m]
+        return data.Subset(dataset.dataset, subset_indices)
+    
+    # If the dataset is an EMNIST dataset directly
+    elif isinstance(dataset, datasets.EMNIST):
+        labels = torch.tensor(dataset.targets)
+        mask = torch.isin(labels, torch.tensor(class_indices))
+        subset_indices = torch.where(mask)[0].tolist()
+        return data.Subset(dataset, subset_indices)
+    
+    else:
+        raise ValueError("Unsupported dataset type")
+
+
 
 def generate_samples(generator: VAE, classifier: FeatureClassifier, class_to_generate: int, examples_to_generate: int, device: torch.device) -> torch.Tensor:
     accepted_samples = []
@@ -99,7 +147,8 @@ def train_model(model: nn.Module, optimizer: optim.Optimizer, dataloader: data.D
     criterion = nn.CrossEntropyLoss() if is_classifier else None
     for epoch in range(epochs):
         running_loss = 0.0
-        for images, labels in dataloader:
+        for data in dataloader:
+            (images, labels) = data
             images, labels = images.to(device), labels.to(device)
 
             optimizer.zero_grad()
@@ -133,33 +182,30 @@ def evaluate_model(model: nn.Module, dataloader: data.DataLoader, device: torch.
 
     return 100 * correct / total
 
-def train_incremental_tasks(
-    dir_path: str,    device: torch.device, 
-    data_path: str, 
-    labels_path: str, 
-    batch_size: int, 
-    epochs: int, 
-    class_order: list, 
-    cbp: bool,
-    feature_classifier_params: dict,
-    generator_params: dict
-    ) -> None:
-    
-    dataset = CustomNumpyDataset(data_path, labels_path, one_hot_labels=False)
-    train_set, test_set = data.random_split(dataset, [int(0.75 * len(dataset)), int(0.25 * len(dataset)) + 1], generator=torch.Generator().manual_seed(42))
+def train_incremental_tasks(dir_path: str, device: torch.device,   class_order: list,  config: dict) -> None:
 
-    total_classes = 50
+
+
+    feature_classifier_params = config['feature_classifier']
+    generator_params = config['generator']
+    epochs = config['epochs']
+    batch_size = config['batch_size']
+    
+    
+    train_set, test_set = load_dataset(config)
+
+    total_classes = config['num_classes']
     num_classes_per_task = 2
     current_classes = class_order[:num_classes_per_task]
 
-    model_vae = VAE(conditional=True, alpha=generator_params['alpha'], continual_backprop=cbp, num_classes = generator_params['num_classes'], latent_dim = generator_params['latent_dim'], encoder_config=generator_params['encoder_config'], decoder_config=generator_params['decoder_config']).to(device)
+    model_vae = VAE(conditional=True, alpha=generator_params['alpha'], continual_backprop=generator_params['cbp'], num_classes = generator_params['num_classes'], latent_dim = generator_params['latent_dim'], encoder_config=generator_params['encoder_config'], decoder_config=generator_params['decoder_config']).to(device)
     logger.info('Generator init')
     model_classifier = FeatureClassifier(
         input_size=feature_classifier_params['input_size'], 
         hidden1=feature_classifier_params['hidden1'], 
         hidden2=feature_classifier_params['hidden2'], 
         num_classes=feature_classifier_params['num_classes'], 
-        continual_backprop=cbp
+        continual_backprop=feature_classifier_params['cbp']
     ).to(device)
     logger.info('Classifier init')
     accuracy_file_path = os.path.join(dir_path, 'accuracy.txt')
@@ -168,7 +214,7 @@ def train_incremental_tasks(
         logger.info(f"Training on Task {task}: Classes {current_classes}")
 
         train_subset = get_subset_of_classes(train_set, current_classes)
-
+       
         if task > 1:  # REPLAY
             generated_images = []
             generated_labels = []

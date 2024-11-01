@@ -15,13 +15,13 @@ class FeatureDataset(torch.utils.data.Dataset):
 
 
 class CustomNumpyDataset(Dataset):
-    def __init__(self, data_path, labels_path, one_hot_labels = True):
+    def __init__(self, data_path, labels_path, one_hot_labels = True, vector_len = 2048):
         # Load the numpy arrays
         self.data = np.load(data_path)
         
         self.labels = np.load(labels_path)
         
-        self.data = np.reshape(self.data, (len(self.labels), 2048))
+        self.data = np.reshape(self.data, (len(self.labels), vector_len))
 
         # Check if the data and labels have consistent length
         assert len(self.data) == len(self.labels), f"Mismatch between data and labels length: {len(self.data)} vs {len(self.labels)}"

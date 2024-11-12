@@ -24,26 +24,27 @@ class Sampling(nn.Module):
         epsilon = torch.randn(batch, dim).to(z_mean.device)
         return z_mean + torch.exp(0.5 * z_log_var) * epsilon
 
-default_encoder_config={'input_size':2048, 'hidden1': 128, 'hidden2': 128 }
-default_decoder_config={'output_size':2048, 'hidden1': 128, 'hidden2': 128 } 
 
+default_encoder_config = {'input_size': 2048, 'hidden1': 128, 'hidden2': 128}
+default_decoder_config = {'output_size': 2048, 'hidden1': 128, 'hidden2': 128}
+default_cbp_config = {'replacement_rate': 10e-4, 'maturity_threshold': 50, 'decay_rate': 0}
         
 
 class VAE(nn.Module):
-    def __init__(self,   alpha=1., conditional=False, continual_backprop=False, num_classes = 50, latent_dim = 10, encoder_config = default_encoder_config, decoder_config = default_decoder_config):
+    def __init__(self,   alpha=1., conditional=False, continual_backprop=False, num_classes = 50, latent_dim = 10, encoder_config = default_encoder_config, decoder_config = default_decoder_config, cbp_config = default_cbp_config):
         super(VAE, self).__init__()
         self.alpha = alpha
         self.conditional = conditional
-        self.encoder = self.get_encoder(latent_dim, encoder_config, continual_backprop)
+        self.encoder = self.get_encoder(latent_dim, encoder_config, continual_backprop, cbp_config)
         self.sampling = Sampling()
-        self.decoder = self.get_decoder(latent_dim, decoder_config, continual_backprop)
+        self.decoder = self.get_decoder(latent_dim, decoder_config, continual_backprop, cbp_config)
 
 
         if self.conditional:
             self.prior_means = nn.Parameter(torch.randn(num_classes, latent_dim))
             self.prior_logvars = nn.Parameter(torch.randn(num_classes, latent_dim))
 
-    def get_encoder(self, latent_dim, config, continual_backprop):
+    def get_encoder(self, latent_dim, config, continual_backprop, cbp_config):
 
         class Encoder(nn.Module):
             def __init__(self):
@@ -58,7 +59,7 @@ class VAE(nn.Module):
                     self.extractor = nn.Sequential(
                         self.dense1,
                         self.activation,
-                        CBPLinear(in_layer=self.dense1, out_layer=self.dense2),
+                        CBPLinear(in_layer=self.dense1, out_layer=self.dense2, replacement_rate=cbp_config['replacement_rate'], maturity_threshold=cbp_config['maturity_threshold'], decay_rate=cbp_config['decay_rate']),
                         self.dense2,
                         self.activation,
                     )
@@ -78,7 +79,7 @@ class VAE(nn.Module):
         
         return Encoder().to(device)
 
-    def get_decoder(self, latent_dim, config, continual_backprop):
+    def get_decoder(self, latent_dim, config, continual_backprop, cbp_config):
         class Decoder(nn.Module):
             def __init__(self):
                 super(Decoder, self).__init__()
@@ -94,11 +95,11 @@ class VAE(nn.Module):
                         self.fc1,
                         self.bn1,
                         self.activation,
-                        CBPLinear(in_layer=self.fc1, out_layer=self.fc2),
+                        CBPLinear(in_layer=self.fc1, out_layer=self.fc2, bn_layer= self.bn1, replacement_rate=cbp_config['replacement_rate'], maturity_threshold=cbp_config['maturity_threshold'], decay_rate=cbp_config['decay_rate']),
                         self.fc2,
                         self.bn2,
                         self.activation,
-                        CBPLinear(in_layer=self.fc2, out_layer=self.fc3),
+                        CBPLinear(in_layer=self.fc2, out_layer=self.fc3, bn_layer=self.bn2,  replacement_rate=cbp_config['replacement_rate'], maturity_threshold=cbp_config['maturity_threshold'], decay_rate=cbp_config['decay_rate']),
                         self.fc3
                         
                     )

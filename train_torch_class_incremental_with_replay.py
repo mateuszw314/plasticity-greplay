@@ -21,7 +21,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def load_dataset(config):
@@ -60,30 +60,33 @@ def load_config(config_path):
         config = yaml.safe_load(file)
     return config
 
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 def main():
     args = parse_args()
     config = load_config(args.config)
     device = torch.device(config['device'])
     logger.info(f"Using device: {device}")
     for experiment in range(config['num_experiments']):
-        try:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            experiment_type = config['experiment_type']
-            experiment_path = f'replay_{experiment_type}_{experiment}_{timestamp}'
-            root_path = os.path.join(config['output_dir'], experiment_path)
-            os.makedirs(root_path, exist_ok=True)
-            
-            # Save a copy of the config file to the output directory
-            shutil.copy(args.config, os.path.join(root_path, 'config.yaml'))
+        #try:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        experiment_type = config['experiment_type']
+        experiment_path = f'replay_{experiment_type}_{experiment}_{timestamp}'
+        root_path = os.path.join(config['output_dir'], experiment_path)
+        os.makedirs(root_path, exist_ok=True)
+        
+        # Save a copy of the config file to the output directory
+        shutil.copy(args.config, os.path.join(root_path, 'config.yaml'))
 
-            # Randomize class order
-            all_classes = list(range(config['num_classes']))
-            random.shuffle(all_classes)
+        # Randomize class order
+        all_classes = list(range(config['num_classes']))
+        random.shuffle(all_classes)
 
-            train_incremental_tasks(root_path, device, all_classes, config)
-        except Exception as e:
-            logger.error(f"Experiment {experiment} failed with error: {e}")
-            continue
+        train_incremental_tasks(root_path, device, all_classes, config)
+        #except Exception as e:
+        #    logger.error(f"Experiment {experiment} failed with error: {e}")
+        #    continue
 
     logger.info("Finished all experiments")
 
@@ -115,13 +118,13 @@ def get_subset_of_classes(dataset, class_indices):
 
 
 
-def generate_samples(generator: VAE, classifier: FeatureClassifier, class_to_generate: int, examples_to_generate: int, device: torch.device) -> torch.Tensor:
+def generate_samples(generator: VAE, classifier: FeatureClassifier, class_to_generate: int, examples_to_generate: int, device: torch.device, softmax_filter: float = 0., replay_limit: int = 15) -> torch.Tensor:
     accepted_samples = []
     generator.eval()
     classifier.eval()
     with torch.no_grad():
         counter = 0
-        while (len(accepted_samples) < examples_to_generate) and counter < 15:
+        while (len(accepted_samples) < examples_to_generate) and counter < replay_limit:
             counter += 1
             prior_means = generator.prior_means[class_to_generate].to(device)
             prior_logvars = generator.prior_logvars[class_to_generate].to(device)
@@ -132,15 +135,15 @@ def generate_samples(generator: VAE, classifier: FeatureClassifier, class_to_gen
             generated_images = generator.decoder(random_latent_vectors)
 
             outputs = classifier(generated_images)
-            _, predicted_labels = torch.max(outputs, 1)
+            softmax_scores, predicted_labels = torch.max(outputs, 1)
 
-            for img, pred_label in zip(generated_images, predicted_labels):
-                if pred_label.item() == class_to_generate:
+            for img, pred_label, score in zip(generated_images, predicted_labels, softmax_scores):
+                if (pred_label.item() == class_to_generate) and (score >= softmax_filter):
                     accepted_samples.append(img)
                 if len(accepted_samples) >= examples_to_generate:
                     break
 
-    return torch.stack(accepted_samples)
+    return accepted_samples
 
 def train_model(model: nn.Module, optimizer: optim.Optimizer, dataloader: data.DataLoader, device: torch.device, epochs: int, is_classifier: bool = False) -> None:
     model.train()
@@ -163,9 +166,9 @@ def train_model(model: nn.Module, optimizer: optim.Optimizer, dataloader: data.D
 
             running_loss += total_loss.item()
 
-        logger.info(f'Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(dataloader)}')
-
-    logger.info('Finished Training Task')
+        #logger.info(f'Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(dataloader)}')
+        print(f'Epoch {epoch + 1}/{epochs}, Loss: {running_loss / len(dataloader)}')
+    print('Finished Training Task')
 
 def evaluate_model(model: nn.Module, dataloader: data.DataLoader, device: torch.device) -> float:
     model.eval()
@@ -190,6 +193,7 @@ def train_incremental_tasks(dir_path: str, device: torch.device,   class_order: 
     generator_params = config['generator']
     epochs = config['epochs']
     batch_size = config['batch_size']
+    cbp_config = config['cbp_config']
     
     
     train_set, test_set = load_dataset(config)
@@ -198,20 +202,31 @@ def train_incremental_tasks(dir_path: str, device: torch.device,   class_order: 
     num_classes_per_task = 2
     current_classes = class_order[:num_classes_per_task]
 
-    model_vae = VAE(conditional=True, alpha=generator_params['alpha'], continual_backprop=generator_params['cbp'], num_classes = generator_params['num_classes'], latent_dim = generator_params['latent_dim'], encoder_config=generator_params['encoder_config'], decoder_config=generator_params['decoder_config']).to(device)
-    logger.info('Generator init')
+    model_vae = VAE(conditional=True, alpha=generator_params['alpha'],
+                    continual_backprop=generator_params['cbp'],
+                    num_classes = generator_params['num_classes'],
+                    latent_dim = generator_params['latent_dim'],
+                    encoder_config=generator_params['encoder_config'],
+                    decoder_config=generator_params['decoder_config'],
+                    cbp_config = cbp_config
+                    ).to(device)
+    logger.info(f'Generator param size: {count_parameters(model_vae)}')
+    print('Generator init')
     model_classifier = FeatureClassifier(
         input_size=feature_classifier_params['input_size'], 
         hidden1=feature_classifier_params['hidden1'], 
         hidden2=feature_classifier_params['hidden2'], 
         num_classes=feature_classifier_params['num_classes'], 
-        continual_backprop=feature_classifier_params['cbp']
+        continual_backprop=feature_classifier_params['cbp'],
+        cbp_config = cbp_config
     ).to(device)
-    logger.info('Classifier init')
+    logger.info(f'Classifier param size: {count_parameters(model_classifier)}')
+
+    print('Classifier init')
     accuracy_file_path = os.path.join(dir_path, 'accuracy.txt')
     
     for task in range(1, total_classes // num_classes_per_task + 1):
-        logger.info(f"Training on Task {task}: Classes {current_classes}")
+        print(f"Training on Task {task}: Classes {current_classes}")
 
         train_subset = get_subset_of_classes(train_set, current_classes)
        
@@ -219,16 +234,22 @@ def train_incremental_tasks(dir_path: str, device: torch.device,   class_order: 
             generated_images = []
             generated_labels = []
             previous_classes = class_order[:((task - 1) * num_classes_per_task)]
+            logger.info(f'Generating replay for task {task}')
             for class_label in previous_classes:
-                samples = generate_samples(model_vae, model_classifier, class_label, 2000, device)
-                generated_images.append(samples)
-                generated_labels.extend([class_label] * samples.size(0))
+                samples = generate_samples(model_vae, model_classifier, class_label, 2000, device, config['softmax_filter'])
+                logger.info(f'Class: {class_label} Replay: {len(samples)}')
+                if len(samples) > 0:
+                    samples = torch.stack(samples)
+                    generated_images.append(samples)
+                    generated_labels.extend([class_label] * samples.size(0))
+                else:
+                    continue
+            if len(generated_images) > 0:
+                generated_images = torch.cat(generated_images, dim=0).cpu()
+                generated_labels = torch.tensor(generated_labels, dtype=torch.long).cpu()
 
-            generated_images = torch.cat(generated_images, dim=0).cpu()
-            generated_labels = torch.tensor(generated_labels, dtype=torch.long).cpu()
-
-            replay_dataset = data.TensorDataset(generated_images, generated_labels)
-            train_subset = data.ConcatDataset([train_subset, replay_dataset])
+                replay_dataset = data.TensorDataset(generated_images, generated_labels)
+                train_subset = data.ConcatDataset([train_subset, replay_dataset])
 
         train_loader = data.DataLoader(train_subset, batch_size=batch_size, shuffle=True, num_workers=2)
 
@@ -254,7 +275,7 @@ def train_incremental_tasks(dir_path: str, device: torch.device,   class_order: 
         test_loader = data.DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=2)
         
         accuracy = evaluate_model(model_classifier, test_loader, device)
-        logger.info(f"Task {task} - Accuracy on seen classes: {accuracy:.2f}%")
+        print(f"Task {task} - Accuracy on seen classes: {accuracy:.2f}%")
 
         # Store accuracy
         with open(accuracy_file_path, 'a') as f:

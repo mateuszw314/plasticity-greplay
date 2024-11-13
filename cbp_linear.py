@@ -1,3 +1,6 @@
+'''
+    Source: https://github.com/shibhansh/loss-of-plasticity.git
+'''
 import torch
 from torch import nn
 from math import sqrt

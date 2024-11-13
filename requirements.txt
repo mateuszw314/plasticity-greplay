@@ -1,0 +1,160 @@
+alabaster @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/alabaster/alabaster-0.7.12
+appdirs @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/appdirs/appdirs-1.4.4
+asn1crypto @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/asn1crypto/asn1crypto-1.5.1
+atomicwrites @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/atomicwrites/atomicwrites-1.4.0
+attrs @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/attrs/attrs-21.4.0
+Babel @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/Babel/Babel-2.10.1
+backports.entry-points-selectable @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/backportsentry_points_selectable/backports.entry_points_selectable-1.1.1
+backports.functools-lru-cache @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/backportsfunctools_lru_cache/backports.functools_lru_cache-1.6.4
+bcrypt @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/bcrypt/bcrypt-3.2.2
+beniget @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/beniget/beniget-0.4.1
+bitstring @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/bitstring/bitstring-3.1.9
+blist @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/blist/blist-1.3.6
+Bottleneck @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/Bottleneck/Bottleneck-1.3.4
+CacheControl @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/CacheControl/CacheControl-0.12.11
+cachy @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/cachy/cachy-0.3.0
+certifi @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/certifi/certifi-2021.10.8
+cffi @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/cffi/cffi-1.15.0
+chardet @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/chardet/chardet-4.0.0
+charset-normalizer @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/charsetnormalizer/charset-normalizer-2.0.12
+cleo @ file:///cluster/installations/sources/p/Python/extensions/cleo-0.8.1-py2.py3-none-any.whl
+click @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/click/click-8.1.3
+clikit @ file:///cluster/installations/sources/p/Python/extensions/clikit-0.6.2-py2.py3-none-any.whl
+cloudpickle==2.2.1
+colorama @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/colorama/colorama-0.4.4
+contourpy==1.2.0
+crashtest @ file:///cluster/installations/sources/p/Python/extensions/crashtest-0.3.1-py3-none-any.whl
+cryptography @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/cryptography/cryptography-37.0.1
+cycler==0.12.1
+Cython @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/Cython/Cython-0.29.28
+deap @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/deap/deap-1.3.3
+decorator @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/decorator/decorator-5.1.1
+distlib @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/distlib/distlib-0.3.4
+dm-tree==0.1.8
+docopt @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/docopt/docopt-0.6.2
+docutils @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/docutils/docutils-0.17.1
+ecdsa @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/ecdsa/ecdsa-0.17.0
+editables @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/editables/editables-0.3
+expecttest @ file:///tmp/vegarde/build/expecttest/0.1.3/GCCcore-11.3.0/expecttest-0.1.3
+filelock @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/filelock/filelock-3.6.0
+flit @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/flit/flit-3.7.1
+flit_core @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/flitcore/flit_core-3.7.1
+fonttools==4.50.0
+fsspec @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/fsspec/fsspec-2022.3.0
+future @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/future/future-0.18.2
+gast @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/gast/gast-0.5.3
+glob2 @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/glob2/glob2-0.7
+html5lib @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/html5lib/html5lib-1.1
+idna @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/idna/idna-3.3
+imagesize @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/imagesize/imagesize-1.3.0
+importlib-metadata @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/importlib_metadata/importlib_metadata-4.11.3
+importlib-resources @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/importlib_resources/importlib_resources-5.7.1
+iniconfig @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/iniconfig/iniconfig-1.1.1
+intervaltree @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/intervaltree/intervaltree-3.1.0
+intreehooks @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/intreehooks/intreehooks-1.0
+ipaddress @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/ipaddress/ipaddress-1.0.23
+jeepney @ file:///cluster/installations/sources/p/Python/extensions/jeepney-0.8.0-py3-none-any.whl
+Jinja2 @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/Jinja2/Jinja2-3.1.2
+joblib==1.3.2
+jsonpatch==1.33
+jsonpointer==2.4
+jsonschema @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/jsonschema/jsonschema-4.4.0
+keyring @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/keyring/keyring-23.5.0
+keyrings.alt @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/keyringsalt/keyrings.alt-4.1.0
+kiwisolver==1.4.5
+liac-arff @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/liacarff/liac-arff-2.5.0
+lockfile @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/lockfile/lockfile-0.12.2
+MarkupSafe @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/MarkupSafe/MarkupSafe-2.1.1
+matplotlib==3.8.3
+mock @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/mock/mock-4.0.3
+more-itertools @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/moreitertools/more-itertools-8.12.0
+mpi4py @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/mpi4py/mpi4py-3.1.3
+mpmath @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/mpmath/mpmath-1.2.1
+msgpack @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/msgpack/msgpack-1.0.3
+netaddr @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/netaddr/netaddr-0.8.0
+netifaces @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/netifaces/netifaces-0.11.0
+networkx==3.2.1
+numexpr @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/numexpr/numexpr-2.8.1
+numpy @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/numpy/numpy-1.22.3
+packaging @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/packaging/packaging-20.9
+pandas @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/pandas/pandas-1.4.2
+paramiko @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/paramiko/paramiko-2.10.4
+pastel @ file:///cluster/installations/sources/p/Python/extensions/pastel-0.2.1-py2.py3-none-any.whl
+pathlib2 @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pathlib2/pathlib2-2.3.7.post1
+pathspec @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pathspec/pathspec-0.9.0
+pbr @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pbr/pbr-5.8.1
+pexpect @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pexpect/pexpect-4.8.0
+Pillow @ file:///tmp/vegarde/build/Pillow/9.1.1/GCCcore-11.3.0/Pillow-9.1.1
+pkginfo @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pkginfo/pkginfo-1.8.2
+platformdirs @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/platformdirs/platformdirs-2.4.1
+pluggy @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pluggy/pluggy-1.0.0
+ply @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/ply/ply-3.11
+poetry @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/poetry/poetry-1.1.13
+poetry-core @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/poetrycore/poetry-core-1.0.8
+protobuf @ file:///tmp/vegarde/build/protobufpython/3.19.4/GCCcore-11.3.0/protobuf-3.19.4
+psutil @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/psutil/psutil-5.9.0
+ptyprocess @ file:///cluster/installations/sources/p/Python/extensions/ptyprocess-0.7.0-py2.py3-none-any.whl
+py @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/py/py-1.11.0
+py-expression-eval @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/py_expression_eval/py_expression_eval-0.3.14
+pyasn1 @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pyasn1/pyasn1-0.4.8
+pybind11 @ file:///tmp/vegarde/build/pybind11/2.9.2/GCCcore-11.3.0/pybind11-2.9.2
+pycparser @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pycparser/pycparser-2.21
+pycrypto @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pycrypto/pycrypto-2.6.1
+Pygments @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/Pygments/Pygments-2.12.0
+pylev @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pylev/pylev-1.4.0
+PyNaCl @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/PyNaCl/PyNaCl-1.5.0
+pyparsing @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pyparsing/pyparsing-3.0.8
+pyrsistent @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pyrsistent/pyrsistent-0.18.1
+pytest @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pytest/pytest-7.1.2
+python-dateutil @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pythondateutil/python-dateutil-2.8.2
+pythran @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/pythran/pythran-0.11.0
+pytoml @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pytoml/pytoml-0.1.21
+pytz @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/pytz/pytz-2022.1
+PyYAML @ file:///tmp/vegarde/build/PyYAML/6.0/GCCcore-11.3.0/PyYAML-6.0
+regex @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/regex/regex-2022.4.24
+requests @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/requests/requests-2.27.1
+requests-toolbelt @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/requeststoolbelt/requests-toolbelt-0.9.1
+scandir @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/scandir/scandir-1.10.0
+scikit-learn==1.4.1.post1
+SciPy @ file:///tmp/vegarde/build/SciPybundle/2022.05/foss-2022a/scipy/scipy-1.8.1
+SecretStorage @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/SecretStorage/SecretStorage-3.3.2
+semantic-version @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/semantic_version/semantic_version-2.9.0
+setuptools-rust @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/setuptoolsrust/setuptools-rust-1.3.0
+setuptools-scm @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/setuptools_scm/setuptools_scm-6.4.2
+shellingham @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/shellingham/shellingham-1.4.0
+simplegeneric @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/simplegeneric/simplegeneric-0.8.1
+simplejson @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/simplejson/simplejson-3.17.6
+six @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/six/six-1.16.0
+snowballstemmer @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/snowballstemmer/snowballstemmer-2.2.0
+sortedcontainers @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sortedcontainers/sortedcontainers-2.4.0
+Sphinx @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/Sphinx/Sphinx-4.5.0
+sphinx-bootstrap-theme @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxbootstraptheme/sphinx-bootstrap-theme-0.8.1
+sphinxcontrib-applehelp @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxcontribapplehelp/sphinxcontrib-applehelp-1.0.2
+sphinxcontrib-devhelp @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxcontribdevhelp/sphinxcontrib-devhelp-1.0.2
+sphinxcontrib-htmlhelp @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxcontribhtmlhelp/sphinxcontrib-htmlhelp-2.0.0
+sphinxcontrib-jsmath @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxcontribjsmath/sphinxcontrib-jsmath-1.0.1
+sphinxcontrib-qthelp @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxcontribqthelp/sphinxcontrib-qthelp-1.0.3
+sphinxcontrib-serializinghtml @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxcontribserializinghtml/sphinxcontrib-serializinghtml-1.1.5
+sphinxcontrib-websupport @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/sphinxcontribwebsupport/sphinxcontrib-websupport-1.2.4
+tabulate @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/tabulate/tabulate-0.8.9
+tensorflow-probability==0.20.1
+threadpoolctl @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/threadpoolctl/threadpoolctl-3.1.0
+toml @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/toml/toml-0.10.2
+tomli @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/tomli/tomli-2.0.1
+tomli_w @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/tomli_w/tomli_w-1.0.0
+tomlkit @ file:///cluster/installations/sources/p/Python/extensions/tomlkit-0.10.2-py3-none-any.whl
+torch==1.12.0
+torchvision @ file:///cluster/work/users/vegarde/build/torchvision/0.13.1/foss-2022a-CUDA-11.7.0/vision-0.13.1
+tornado==6.4
+tqdm==4.66.2
+typing_extensions @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/typing_extensions/typing_extensions-4.2.0
+ujson @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/ujson/ujson-5.2.0
+urllib3 @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/urllib3/urllib3-1.26.9
+virtualenv @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/virtualenv/virtualenv-20.14.1
+visdom==0.2.4
+wcwidth @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/wcwidth/wcwidth-0.2.5
+webencodings @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/webencodings/webencodings-0.5.1
+websocket-client==1.7.0
+xlrd @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/xlrd/xlrd-2.0.1
+zipfile36 @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/zipfile36/zipfile36-0.1.3
+zipp @ file:///tmp/vegarde/build/Python/3.10.4/GCCcore-11.3.0/zipp/zipp-3.8.0

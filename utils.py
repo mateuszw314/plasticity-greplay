@@ -63,18 +63,14 @@ def get_subset_of_classes(dataset, class_indices):
             data.Subset: Subset of the dataset containing only the specified classes.
         """
 
-    # If the dataset is a Subset, get the indices and corresponding labels (makes sure we're dealing with split data)
-    if isinstance(dataset, data.Subset):
-        if isinstance(dataset.dataset, CustomNumpyDataset):
-            targets = dataset.dataset.labels[dataset.indices]
-        else:
-            raise ValueError("Unsupported dataset type")
-
-        mask = torch.isin(targets, torch.tensor(class_indices))
-        subset_indices = [dataset.indices[i] for i, m in enumerate(mask) if m]
-        return data.Subset(dataset.dataset, subset_indices)
+    if isinstance(dataset.dataset, CustomNumpyDataset):
+        targets = dataset.dataset.labels[dataset.indices]
     else:
         raise ValueError("Unsupported dataset type")
+
+    mask = torch.isin(targets, torch.tensor(class_indices))
+    subset_indices = [dataset.indices[i] for i, m in enumerate(mask) if m]
+    return data.Subset(dataset.dataset, subset_indices)
 
 
 def evaluate_classifier(model: nn.Module, dataloader: data.DataLoader, device: torch.device) -> float:

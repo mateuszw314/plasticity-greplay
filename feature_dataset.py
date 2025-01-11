@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
+import json
+import os
 
 
 class CustomNumpyDataset(Dataset):
@@ -41,3 +43,41 @@ class CustomNumpyDataset(Dataset):
         sample = self.data[idx]
         label = self.labels[idx]
         return sample, label
+
+
+class ImageNetDataset(Dataset):
+    """Dataset for loading preprocessed ImageNet task data"""
+
+    def __init__(self, task_dir: str, task_id: str, is_train: bool = True):
+        # Determine file path
+        mode = 'train' if is_train else 'val'
+        file_path = os.path.join(task_dir, f'task_{task_id}_{mode}.npz')
+
+        # Load data
+        loaded = np.load(file_path)
+        self.data = loaded['data']
+        self.labels = loaded['labels']
+
+        # Reshape if needed and convert to float32
+        if len(self.data.shape) == 2:
+            self.data = self.data.reshape(-1, 3, 64, 64)
+        self.data = self.data.astype(np.float32) / 255.0
+
+        # Load task definitions to get label mapping
+        with open(os.path.join(task_dir, 'task_definitions.json'), 'r') as f:
+            self.task_definitions = json.load(f)
+
+        # Create label mapping
+        self.label_map = {
+            old_label: new_label
+            for new_label, old_label in enumerate(self.task_definitions[f'task_{task_id}'])
+        }
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        img = torch.from_numpy(self.data[idx])
+        label = torch.tensor(self.label_map[int(self.labels[idx])], dtype=torch.long)
+        return img, label
+

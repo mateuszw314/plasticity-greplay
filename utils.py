@@ -15,7 +15,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import yaml
 from feature_classifier import FeatureClassifier
-from feature_dataset import CustomNumpyDataset
+from feature_dataset import CustomNumpyDataset, ImageNetDataset
 from vae_models import VAE
 
 
@@ -26,6 +26,7 @@ def load_dataset(config):
         labels_path = config['custom_dataset']['labels_path']
         dataset = CustomNumpyDataset(data_path, labels_path, one_hot_labels=False,
                                      vector_len=config['custom_dataset']['vector_len'])
+
     else:
         raise ValueError(f"Unsupported dataset: {dataset_name}")
 
@@ -33,6 +34,11 @@ def load_dataset(config):
     train_set, test_set = data.random_split(dataset, [int(0.75 * dataset_len), int(0.25 * dataset_len) + 1],
                                             generator=torch.Generator().manual_seed(42))
     return train_set, test_set
+
+
+def load_imagenet_dataset(task_dir: str, task_id: int, is_train: bool) -> data.Dataset:
+    dataset = ImageNetDataset(task_dir, task_id, is_train=is_train)
+    return dataset
 
 
 def parse_args():

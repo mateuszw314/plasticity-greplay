@@ -113,7 +113,7 @@ def train_incremental_tasks(dir_path: str, device: torch.device, class_order: li
             config (dict): Configuration dictionary.
         """
     feature_classifier_params = config['feature_classifier']
-    generator_params = config['generator']
+    generator_params = config['generator'] if 'generator' in config.keys() else None
     epochs = config['epochs']
     batch_size = config['batch_size']
     cbp_config = config['cbp_config']
@@ -126,12 +126,15 @@ def train_incremental_tasks(dir_path: str, device: torch.device, class_order: li
     current_classes = class_order[:num_classes_per_task]
 
     # Initialize the necessary models
-    model_vae = VAE(conditional=True, alpha=generator_params['alpha'], continual_backprop=generator_params['cbp'],
-                    num_classes=generator_params['num_classes'], latent_dim=generator_params['latent_dim'],
-                    encoder_config=generator_params['encoder_config'],
-                    decoder_config=generator_params['decoder_config'], cbp_config=cbp_config).to(device)
-    logger.info(f'Generator param size: {u.count_parameters(model_vae)}')
-    print('Generator initialized')
+    if 'generator' in config.keys():
+        model_vae = VAE(conditional=True, alpha=generator_params['alpha'], continual_backprop=generator_params['cbp'],
+                        num_classes=generator_params['num_classes'], latent_dim=generator_params['latent_dim'],
+                        encoder_config=generator_params['encoder_config'],
+                        decoder_config=generator_params['decoder_config'], cbp_config=cbp_config).to(device)
+        logger.info(f'Generator param size: {u.count_parameters(model_vae)}')
+        print('Generator initialized')
+    else:
+        print('No generator configuration, using exact replay')
     model_classifier = FeatureClassifier(input_size=feature_classifier_params['input_size'],
         hidden1=feature_classifier_params['hidden1'], hidden2=feature_classifier_params['hidden2'],
         num_classes=feature_classifier_params['num_classes'], continual_backprop=feature_classifier_params['cbp'],
@@ -153,22 +156,31 @@ def train_incremental_tasks(dir_path: str, device: torch.device, class_order: li
             generated_labels = []
             previous_classes = class_order[:((task - 1) * num_classes_per_task)]
             logger.info(f'Generating replay for task {task}')
-            for class_label in previous_classes:
-                samples = generate_samples(model_vae, model_classifier, class_label, 2000, device,
-                                           config['softmax_filter'])
-                logger.info(f'Class: {class_label} Replay: {len(samples)}')
-                if len(samples) > 0:
-                    samples = torch.stack(samples)
-                    generated_images.append(samples)
-                    generated_labels.extend([class_label] * samples.size(0))
-                else:
-                    continue
-            if len(generated_images) > 0:
-                generated_images = torch.cat(generated_images, dim=0).cpu()
-                generated_labels = torch.tensor(generated_labels, dtype=torch.long).cpu()
+            if 'generator' in config.keys():
+                for class_label in previous_classes:
+                    samples = generate_samples(model_vae, model_classifier, class_label, 2000, device,
+                                               config['softmax_filter'])
 
-                replay_dataset = data.TensorDataset(generated_images, generated_labels)
+                    logger.info(f'Class: {class_label} Replay: {len(samples)}')
+                    if len(samples) > 0:
+                        samples = torch.stack(samples)
+                        generated_images.append(samples)
+                        generated_labels.extend([class_label] * samples.size(0))
+                    else:
+                        continue
+                if len(generated_images) > 0:
+                    generated_images = torch.cat(generated_images, dim=0).cpu()
+                    generated_labels = torch.tensor(generated_labels, dtype=torch.long).cpu()
+
+                    replay_dataset = data.TensorDataset(generated_images, generated_labels)
+                    train_subset = data.ConcatDataset([train_subset, replay_dataset])
+            else: # exact replay
+                full_replay_subset = u.get_subset_of_classes(train_set, previous_classes)
+                samples_per_class = 20
+                random_indices = torch.randperm(len(full_replay_subset))[:(samples_per_class*len(previous_classes))]
+                replay_dataset = data.Subset(full_replay_subset, random_indices)
                 train_subset = data.ConcatDataset([train_subset, replay_dataset])
+
 
         train_loader = data.DataLoader(train_subset, batch_size=batch_size, shuffle=True, num_workers=2)
 
@@ -177,16 +189,18 @@ def train_incremental_tasks(dir_path: str, device: torch.device, class_order: li
         u.train_model(model_classifier, optimizer_classifier, train_loader, device, epochs, is_classifier=True)
 
         # Train the generator
-        optimizer_vae = optim.Adam(model_vae.parameters(), lr=1e-4)
-        u.train_model(model_vae, optimizer_vae, train_loader, device, epochs)
+        if 'generator' in config.keys():
+            optimizer_vae = optim.Adam(model_vae.parameters(), lr=1e-4)
+            u.train_model(model_vae, optimizer_vae, train_loader, device, epochs)
 
         # Select the next chunk of classes
         if task * num_classes_per_task < total_classes:
             current_classes = class_order[(task * num_classes_per_task):((task + 1) * num_classes_per_task)]
 
         # Save the models
-        model_path = os.path.join(dir_path, f'generator_class_incremental_with_replay_task{task}.pth')
-        torch.save(model_vae.state_dict(), model_path)
+        if 'generator' in config.keys(): #TODO: reduce the number of if-checks
+            model_path = os.path.join(dir_path, f'generator_class_incremental_with_replay_task{task}.pth')
+            torch.save(model_vae.state_dict(), model_path)
         model_path = os.path.join(dir_path, f'classifier_class_incremental_with_replay_task{task}.pth')
         torch.save(model_classifier.state_dict(), model_path)
 

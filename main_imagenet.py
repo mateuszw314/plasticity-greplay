@@ -136,18 +136,21 @@ def train_incremental_tasks(dir_path: str, device: torch.device, config: dict) -
     print('Classifier initialized')
     accuracy_file_path = os.path.join(dir_path, 'accuracy.txt')
     class_order = range(1000)
-    num_classes_per_task = 1000//config['num_tasks']
+    num_classes_per_task = 10
+    initial_task_classes = 100
     for task in range(config['num_tasks']):
         print(f"Training on Task {task}")
 
-        # Get a subset of the original data corresponding to the classes in the current task.
-        train_subset = u.load_imagenet_dataset(task_dir = config['data_dir'], task_id=task, is_train=True)
-
+        train_subset = u.load_imagenet_dataset(
+            task_dir=config['data_dir'], task_id=task, is_train=True,
+            num_classes_per_task=num_classes_per_task,
+            initial_task_classes=initial_task_classes
+        )
         # Replay previous classes
-        if task > 1:
+        if task > 0:
             generated_images = []
             generated_labels = []
-            previous_classes = class_order[:((task - 1) * num_classes_per_task)]
+            previous_classes = class_order[:initial_task_classes + ((task - 1) * num_classes_per_task)]
             logger.info(f'Generating replay for task {task}')
             if 'generator' in config.keys():
                 for class_label in previous_classes:
@@ -196,7 +199,11 @@ def train_incremental_tasks(dir_path: str, device: torch.device, config: dict) -
 
         # Evaluate the classifier on all seen classes
         for eval_task in range(task+1):
-            test_subset = u.load_imagenet_dataset(task_dir = config['data_dir'], task_id=eval_task, is_train=False)
+            test_subset = u.load_imagenet_dataset(
+                task_dir=config['data_dir'], task_id=eval_task, is_train=False,
+                num_classes_per_task=num_classes_per_task,
+                initial_task_classes=initial_task_classes
+            )
             test_loader = data.DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=2)
 
             accuracy = u.evaluate_classifier(model_classifier, test_loader, device)

@@ -62,7 +62,7 @@ def extract_experiment_data(root_path):
             log_path = os.path.join(exp_path, 'log.log')
             device, generator_size, classifier_size, replay_info = parse_log_file(log_path)
 
-            results_path = os.path.join(exp_path, 'results_core50')
+            results_path = os.path.join(exp_path, 'results_emnist')
             for res_dir in os.listdir(results_path):
                 res_path = os.path.join(results_path, res_dir)
                 accuracy_path = os.path.join(res_path, 'accuracy.txt')
@@ -96,7 +96,7 @@ def extract_experiment_data(root_path):
 
 
 if __name__ == "__main__":
-    root_path = '/cluster/work/users/mateuwa/CBP'  # Specify the root directory here
+    root_path = '/cluster/work/users/mateuwa/CBP_EMNIST'  # Specify the root directory here
     df = extract_experiment_data(root_path)
     print(df.head())  # For quick verification
-    df.to_csv('parsed_experiment_results.csv', index=False)  # Save the DataFrame to a CSV file
+    df.to_csv('/cluster/work/users/mateuwa/CBP_EMNIST/parsed_experiment_results.csv', index=False)  # Save the DataFrame to a CSV file

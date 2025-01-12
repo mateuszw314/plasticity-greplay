@@ -1,11 +1,13 @@
-output_dir: 'results_emnist/291024_trainset'
+output_dir: 'results_emnist'
 batch_size: 1024
 epochs: 50
-num_experiments: 20
+num_experiments: 1
 device: 'cuda:1'
 dataset: 'custom'  
 experiment_type: 'mixed'
 num_classes: 47 # 50 for core50
+softmax_filter: 0.0
+
 custom_dataset:
   data_path: 'data/EMNIST_numpy/images.npy'
   labels_path: 'data/EMNIST_numpy/labels.npy'

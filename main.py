@@ -33,26 +33,26 @@ def main():
 
     # Perform multiple experiments as specified in the configuration
     for experiment in range(config['num_experiments']):
-        try:
+        #try:
             # Generate output directories
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            experiment_type = config['experiment_type']
-            experiment_path = f'replay_{experiment_type}_{experiment}_{timestamp}'
-            root_path = os.path.join(config['output_dir'], experiment_path)
-            os.makedirs(root_path, exist_ok=True)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        experiment_type = config['experiment_type']
+        experiment_path = f'replay_{experiment_type}_{experiment}_{timestamp}'
+        root_path = os.path.join(config['output_dir'], experiment_path)
+        os.makedirs(root_path, exist_ok=True)
 
-            # Save a copy of the config file to the output directory (for future reference)
-            shutil.copy(args.config, os.path.join(root_path, 'config.yaml'))
+        # Save a copy of the config file to the output directory (for future reference)
+        shutil.copy(args.config, os.path.join(root_path, 'config.yaml'))
 
-            # Randomize class order – different order for each experiment instance
-            all_classes = list(range(config['num_classes']))
-            random.shuffle(all_classes)
+        # Randomize class order – different order for each experiment instance
+        all_classes = list(range(config['num_classes']))
+        random.shuffle(all_classes)
 
-            # Training
-            train_incremental_tasks(root_path, device, all_classes, config)
-        except Exception as e:
-            logger.error(f"Experiment {experiment} failed with error: {e}")
-            continue
+        # Training
+        train_incremental_tasks(root_path, device, all_classes, config)
+        #except Exception as e:
+        #    logger.error(f"Experiment {experiment} failed with error: {e}")
+        #    continue
 
     logger.info("Finished all experiments")
 

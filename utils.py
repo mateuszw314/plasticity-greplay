@@ -31,13 +31,48 @@ def load_dataset(config):
         raise ValueError(f"Unsupported dataset: {dataset_name}")
 
     dataset_len = len(dataset)
-    train_set, test_set = data.random_split(dataset, [int(0.75 * dataset_len), int(0.25 * dataset_len) + 1],
-                                            generator=torch.Generator().manual_seed(42))
+    if dataset_name == 'custom':
+        #train_set, test_set = data.random_split(dataset, [int(0.75 * dataset_len), int(0.25 * dataset_len) + 1],
+                                            #generator=torch.Generator().manual_seed(42))
+        train_set, test_set = data.random_split(dataset, [int(0.75 * dataset_len), int(0.25 * dataset_len)],
+                                                generator = torch.Generator().manual_seed(42))
+
     return train_set, test_set
 
 
-def load_imagenet_dataset(task_dir: str, task_id: int, is_train: bool) -> data.Dataset:
-    dataset = ImageNetDataset(task_dir, task_id, is_train=is_train)
+def load_imagenet_dataset(task_dir: str, task_id: int, is_train: bool,
+                         num_classes_per_task: int = 10, initial_task_classes: int = 500) -> data.Dataset:
+    """
+    Load the ImageNet dataset for a specific task.
+
+    Args:
+        task_dir: Directory containing the ImageNet dataset.
+        task_id: ID of the task.
+        is_train: Whether to load the training or validation set.
+        num_classes_per_task: Number of classes per task (default: 10).
+        initial_task_classes: Number of classes for the first task (default: 500).
+    Returns:
+        torch.utils.data.Dataset: The ImageNet dataset.
+    """
+
+
+    if task_id == 0:
+        # Load the first 500 classes (50 files)
+        num_initial_files = 0
+        num_files_to_load = initial_task_classes // num_classes_per_task
+    else:
+        # Load 10 classes (1 file)
+        num_initial_files = initial_task_classes // num_classes_per_task
+        num_files_to_load = 1
+
+    datasets = []
+    for i in range(num_initial_files + (task_id * num_files_to_load),
+                   num_initial_files + ((task_id + 1) * num_files_to_load)):
+        datasets.append(ImageNetDataset(task_dir, i, is_train=is_train))
+
+    # Concatenate the datasets
+    dataset = data.ConcatDataset(datasets)
+
     return dataset
 
 

@@ -52,7 +52,6 @@ class ImageNetDataset(Dataset):
         # Determine file path
         mode = 'train' if is_train else 'val'
         file_path = os.path.join(task_dir, f'task_{task_id}_{mode}.npz')
-
         # Load data
         loaded = np.load(file_path)
         self.data = loaded['data']

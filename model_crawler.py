@@ -34,8 +34,8 @@ def parse_log_file(log_path):
     with open(log_path, 'r') as file:
         lines = file.readlines()
 
-    #lines = lines[579:627]
-    lines = lines[487:531]
+    lines = lines[579:627] #CORE50
+    #lines = lines[487:531] #EMNIST
     for line in lines:
         if "Replay:" in line:
             match = re.match(r'.*Class: (\d+) Replay: (\d+)', line)
@@ -43,7 +43,7 @@ def parse_log_file(log_path):
                 class_labels.append(int(match.groups()[0]))
 
 
-    last_classes = set(range(47)).difference(set(class_labels))
+    last_classes = set(range(50)).difference(set(class_labels))
     last_classes = list(last_classes)
     class_labels = class_labels + last_classes
     return class_labels
@@ -54,7 +54,8 @@ def crawl_directory(root_path):
     experiment_dirs = [dir for dir in os.listdir(root_path) if os.path.isdir(os.path.join(root_path, dir))]
     for exp_dir in experiment_dirs:
         print(f'Processing experiment {exp_dir}')
-        try:
+        #try:
+        if True:
             exp_path = os.path.join(root_path, exp_dir)
 
             log_path = os.path.join(exp_path, 'log.log')
@@ -66,12 +67,21 @@ def crawl_directory(root_path):
                 res_path = os.path.join(results_path, res_dir)
                 config_path = os.path.join(res_path, 'config.yaml')
                 acc_path = os.path.join(res_path, 'detailed_accuracy.csv')
-                if os.path.isfile(acc_path):
-                    print('Acc file exists, skipping')
+                dead_path = os.path.join(res_path, 'dead_neurons.csv')
+
+                if os.path.isfile(acc_path) and os.path.isfile(dead_path):
+                    print('Result files exist, skipping')
                     continue
+                    #pass
+
                 with open(acc_path, 'w') as f:
                     f.write(f'{exp_dir}\n')
                     f.write(f'Task,Test,Accuracy(%),Class1,Class2\n')
+
+                with open(dead_path, 'w') as f:
+                    f.write(f'{exp_dir}\n')
+                    f.write(f'Task,Test,Layer,Dead_neurons\n')
+
 
                 # read config file
                 config = parse_config_file(config_path)
@@ -98,16 +108,20 @@ def crawl_directory(root_path):
                         test_loader = data.DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=2)
 
                         accuracy = u.evaluate_classifier(model_classifier, test_loader, device)
+                        dead_neurons = u.count_dead_neurons(model_classifier, test_loader, device)
                         # print(f"Task {task} - Test {test} - Accuracy on seen classes: {accuracy:.2f}%")
                         with open(acc_path, 'a') as f:
                             f.write(f'{task},{test + 1},{accuracy:.2f},{current_classes[0]},{current_classes[1]}\n')
+                        with open(dead_path, 'a') as f:
+                            for ii, (layer, dead_count) in enumerate(dead_neurons.items()):
+                                f.write(f'{task},{test + 1},{ii},{dead_count}\n')
 
-        except:
-            print('Error parsing in file {}'.format(exp_dir))
+        #except:
+        #    print('Error parsing in file {}'.format(exp_dir))
 
 
 
 if __name__ == "__main__":
-    root_path = '/cluster/work/users/mateuwa/CBP_EMNIST'  # Specify the root directory here
+    root_path = '/cluster/work/users/mateuwa/CBP'  # Specify the root directory here
     crawl_directory(root_path)
-    print('Crawling complete')
+    print('Model crawling complete')

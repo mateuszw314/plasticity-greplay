@@ -54,12 +54,12 @@ def crawl_directory(root_path):
     experiment_dirs = [dir for dir in os.listdir(root_path) if os.path.isdir(os.path.join(root_path, dir))]
     for exp_dir in experiment_dirs:
         print(f'Processing experiment {exp_dir}')
-        #try:
-        if True:
+        try:
+        #if True: # for debugging
             exp_path = os.path.join(root_path, exp_dir)
 
             log_path = os.path.join(exp_path, 'log.log')
-            results_path = os.path.join(exp_path, 'results_emnist')
+            results_path = os.path.join(exp_path, 'results_core50')
 
             class_order = parse_log_file(log_path)
 
@@ -68,19 +68,23 @@ def crawl_directory(root_path):
                 config_path = os.path.join(res_path, 'config.yaml')
                 acc_path = os.path.join(res_path, 'detailed_accuracy.csv')
                 dead_path = os.path.join(res_path, 'dead_neurons.csv')
-
-                if os.path.isfile(acc_path) and os.path.isfile(dead_path):
+                total_dead_path = os.path.join(res_path, 'total_dead_neurons.csv')
+                if os.path.isfile(acc_path) and os.path.isfile(dead_path) and os.path.isfile(total_dead_path):
                     print('Result files exist, skipping')
-                    continue
-                    #pass
+                    #continue
+                    pass
 
-                with open(acc_path, 'w') as f:
-                    f.write(f'{exp_dir}\n')
-                    f.write(f'Task,Test,Accuracy(%),Class1,Class2\n')
+                #with open(acc_path, 'w') as f:
+                #    f.write(f'{exp_dir}\n')
+                #    f.write(f'Task,Test,Accuracy(%),Class1,Class2\n')
 
-                with open(dead_path, 'w') as f:
+                #with open(dead_path, 'w') as f:
+                #    f.write(f'{exp_dir}\n')
+                #    f.write(f'Task,Test,Layer,Dead_neurons\n')
+
+                with open(total_dead_path, 'w') as f:
                     f.write(f'{exp_dir}\n')
-                    f.write(f'Task,Test,Layer,Dead_neurons\n')
+                    f.write(f'Task,Layer,Dead_neurons\n')
 
 
                 # read config file
@@ -99,29 +103,37 @@ def crawl_directory(root_path):
                                                      continual_backprop=feature_classifier_params['cbp'],
                                                      cbp_config=cbp_config).to(device)
 
-                for task in range(1, 24):
+                for task in range(1, 26):
                     model_classifier.load_state_dict(
                         torch.load(os.path.join(res_path, f'classifier_class_incremental_with_replay_task{task}.pth')))
-                    for test in range(task):
-                        current_classes = [class_order[2 * test], class_order[2 * test + 1]]
-                        test_subset = u.get_subset_of_classes(test_set, current_classes)
-                        test_loader = data.DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=2)
+                    #for test in range(task):
+                        #current_classes = [class_order[2 * test], class_order[2 * test + 1]]
+                        #test_subset = u.get_subset_of_classes(test_set, current_classes)
+                        #test_loader = data.DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=2)
 
-                        accuracy = u.evaluate_classifier(model_classifier, test_loader, device)
-                        dead_neurons = u.count_dead_neurons(model_classifier, test_loader, device)
+                        #accuracy = u.evaluate_classifier(model_classifier, test_loader, device)
+                        #dead_neurons = u.count_dead_neurons(model_classifier, test_loader, device)
                         # print(f"Task {task} - Test {test} - Accuracy on seen classes: {accuracy:.2f}%")
-                        with open(acc_path, 'a') as f:
-                            f.write(f'{task},{test + 1},{accuracy:.2f},{current_classes[0]},{current_classes[1]}\n')
-                        with open(dead_path, 'a') as f:
-                            for ii, (layer, dead_count) in enumerate(dead_neurons.items()):
-                                f.write(f'{task},{test + 1},{ii},{dead_count}\n')
+                        #with open(acc_path, 'a') as f:
+                        #    f.write(f'{task},{test + 1},{accuracy:.2f},{current_classes[0]},{current_classes[1]}\n')
+                        #with open(dead_path, 'a') as f:
+                        #    for ii, (layer, dead_count) in enumerate(dead_neurons.items()):
+                        #        f.write(f'{task},{test + 1},{ii},{dead_count}\n')
 
-        #except:
-        #    print('Error parsing in file {}'.format(exp_dir))
+                    current_classes = [class_order[0], class_order[2 * task + 1]]
+                    test_subset = u.get_subset_of_classes(test_set, current_classes)
+                    test_loader = data.DataLoader(test_subset, batch_size=batch_size, shuffle=False, num_workers=2)
+
+                    total_dead_neurons = u.count_dead_neurons(model_classifier, test_loader, device)
+                    with open(total_dead_path, 'a') as f:
+                        for ii, (layer, dead_count) in enumerate(total_dead_neurons.items()):
+                            f.write(f'{task},{ii},{dead_count}\n')
+        except:
+            print('Error parsing in file {}'.format(exp_dir))
 
 
 
 if __name__ == "__main__":
-    root_path = '/cluster/work/users/mateuwa/CBP'  # Specify the root directory here
+    root_path = '/cluster/work/users/mateuwa/CBP_SGD'  # Specify the root directory here
     crawl_directory(root_path)
     print('Model crawling complete')

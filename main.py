@@ -185,12 +185,14 @@ def train_incremental_tasks(dir_path: str, device: torch.device, class_order: li
         train_loader = data.DataLoader(train_subset, batch_size=batch_size, shuffle=True, num_workers=2)
 
         # Train the classifier
-        optimizer_classifier = optim.Adam(model_classifier.parameters(), lr=1e-4)
+        #optimizer_classifier = optim.Adam(model_classifier.parameters(), lr=1e-4, weight_decay=1e-3)
+        optimizer_classifier = optim.SGD(model_classifier.parameters(), lr=1e-3)
         u.train_model(model_classifier, optimizer_classifier, train_loader, device, epochs, is_classifier=True)
 
         # Train the generator
         if 'generator' in config.keys():
-            optimizer_vae = optim.Adam(model_vae.parameters(), lr=1e-4)
+            #optimizer_vae = optim.Adam(model_vae.parameters(), lr=1e-4, weight_decay=1e-3)
+            optimizer_vae = optim.SGD(model_vae.parameters(), lr=1e-3)
             u.train_model(model_vae, optimizer_vae, train_loader, device, epochs)
 
         # Select the next chunk of classes

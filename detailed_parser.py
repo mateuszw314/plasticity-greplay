@@ -35,12 +35,12 @@ def crawl_directory(root_path):
             exp_path = os.path.join(root_path, exp_dir)
 
             log_path = os.path.join(exp_path, 'log.log')
-            results_path = os.path.join(exp_path, 'results_emnist')
+            results_path = os.path.join(exp_path, 'results_core50')
 
 
             for res_dir in os.listdir(results_path):
                 res_path = os.path.join(results_path, res_dir)
-                acc_path = os.path.join(res_path, 'detailed_accuracy.csv')
+                acc_path = os.path.join(res_path, 'total_dead_neurons.csv')
                 df = pd.read_csv(acc_path, skiprows=1)
                 result_dict[exp_dir] = df
 
@@ -48,12 +48,12 @@ def crawl_directory(root_path):
             print('Error parsing in file {}'.format(exp_dir))
             print(e)
 
-    with open(f'{root_path}/detailed_results', 'wb') as f:
+    with open(f'{root_path}/aggregated_total_dead_neurons.pkl', 'wb') as f:
         pickle.dump(result_dict, f)
 
 
 
 if __name__ == "__main__":
-    root_path = '/cluster/work/users/mateuwa/CBP_EMNIST'  # Specify the root directory here
+    root_path = '/cluster/work/users/mateuwa/CBP_SGD'  # Specify the root directory here
     crawl_directory(root_path)
-    print('Crawling complete')
+    print('Detailed crawling complete')

@@ -22,13 +22,13 @@ feature_classifier:
   hidden1: 512
   hidden2: 256
   num_classes: 50
-  cbp: false
+  cbp: true
 
 generator:
     alpha: 10.
     num_classes: 50
     latent_dim: 10
-    cbp: false
+    cbp: true
     encoder_config:
         input_size: 2048
         hidden1: 128
